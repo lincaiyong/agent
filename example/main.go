@@ -1,10 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/lincaiyong/daemon/common"
 	"github.com/lincaiyong/log"
 	"github.com/lincaiyong/uniapi/service/monica"
 	"os"
@@ -15,21 +16,42 @@ import (
 var toolUseRegex *regexp.Regexp
 
 type ToolUseCall struct {
-	Name string
-	Args string
-	key  string
+	Name   string `json:"name"`
+	Args   string `json:"args"`
+	Error  string `json:",omitempty" json:"error"`
+	Result string `json:",omitempty" json:"result"`
+	key    string
 }
 
-func (c *ToolUseCall) Key() string {
-	if c.key == "" {
-		c.key = fmt.Sprintf("%s %s", c.Name, c.Args)
+func (call *ToolUseCall) Key() string {
+	if call.key == "" {
+		call.key = fmt.Sprintf("%s %s", call.Name, call.Args)
 	}
-	return c.key
+	return call.key
+}
+
+func (call *ToolUseCall) Call(workDir string) error {
+	if call.Name == "ls" || call.Name == "cat" || call.Name == "rg" {
+		stdout, stderr, err := common.RunCommand(context.Background(), workDir, "bash", "-c", fmt.Sprintf("%s %s", call.Name, call.Args))
+		if err != nil {
+			call.Result = stderr
+			call.Error = fmt.Sprintf("%v", err)
+			return err
+		}
+		if len(stdout) > 1000 {
+			stdout = stdout[:1000] + "..."
+		}
+		call.Result = stdout
+		return nil
+	} else {
+		call.Error = fmt.Sprintf("unknown command %s", call.Name)
+		return errors.New("unknown command")
+	}
 }
 
 func extractToolUse(s string) []*ToolUseCall {
 	if toolUseRegex == nil {
-		toolUseRegex = regexp.MustCompile(`<tool name="(.+?)">(.+?)</tool>`)
+		toolUseRegex = regexp.MustCompile(`(?s)<tool>(.+?)</tool>`)
 	}
 	m := toolUseRegex.FindAllStringSubmatch(s, -1)
 	if len(m) == 0 {
@@ -37,45 +59,16 @@ func extractToolUse(s string) []*ToolUseCall {
 	}
 	var ret []*ToolUseCall
 	for _, mm := range m {
-		call := &ToolUseCall{
-			Name: mm[1],
-			Args: mm[2],
+		tool := strings.TrimSpace(mm[1])
+		var toolCall ToolUseCall
+		err := json.Unmarshal([]byte(tool), &toolCall)
+		if err != nil {
+			log.ErrorLog("fail to parse: %s", tool)
+			continue
 		}
-		ret = append(ret, call)
+		ret = append(ret, &toolCall)
 	}
 	return ret
-}
-
-func read(filePath string) string {
-	b, err := os.ReadFile(filePath)
-	if err != nil {
-		return "<FAIL TO READ>"
-	}
-	lines := bytes.Split(b, []byte("\n"))
-	var sb strings.Builder
-	for i, line := range lines {
-		sb.WriteString(fmt.Sprintf("|%5d|", i+1))
-		sb.Write(line)
-		sb.WriteString("\n")
-	}
-	return sb.String()
-}
-
-func ls(dirPath string) string {
-	items, err := os.ReadDir(dirPath)
-	if err != nil {
-		return ""
-	}
-	result := make([]string, len(items))
-	for i, item := range items {
-		result[i] = item.Name()
-	}
-	return strings.Join(result, ",")
-}
-
-type ToolUseResult struct {
-	ToolUse string `json:"tool_use"`
-	Result  string `json:"result"`
 }
 
 func main() {
@@ -93,32 +86,52 @@ if __name__ == '__main__':
 		log.ErrorLog("fail to write: %v", err)
 		return
 	}
-	systemPrompt := `<system>
-You are a senior engineer, skilled at understanding Python code.
-You know how to trace variables and functions to find their definitions in order to answer questions.
-You can access following tools if you need:
+	workDir := "/tmp/samples"
+	systemPrompt := fmt.Sprintf(`<system>
+You are a senior engineer, skilled at understanding Go code.
+You can access following bash tools if you need:
+
+<tools>
 [
 	{
-		"tool": "read",
-		"description": "Read file from file system. Line numbers will be prefixed to each file line using the |%5d| format specifier for right-aligned numerical presentation.",
-		"usage": "<tool name=\"read\">/path/to/file</tool>"
+		"tool": "cat",
+		"description": "Concatenate and print files.",
+		"usage": <tool>{"name":"cat", "args":"..."}</tool>
 	},
 	{
 		"tool": "ls",
-		"description": "List directory.",
-		"usage": "<tool name=\"ls\">/path/to/file</tool>"
+		"description": "List directory contents.",
+		"usage": <tool>{"name":"ls", "args":"..."}</tool>
+	},
+	{
+		"tool": "rg",
+		"description": "ripgrep (rg) recursively searches the current directory for lines matching a regex pattern.",
+		"usage": <tool>{"name":"rg", "args":"..."}</tool>",
+		"examples": [
+			<tool>{"name":"rg", "args":"-F -i 'main'"}</tool>,
+			<tool>{"name":"rg", "args":"-w -m 50 -e '[Mm]ain'"}</tool>
+		]
 	}
 ]
-</system>`
+</tools>
+
+<tips>
+1. 不要重复调用工具：你在调用工具前，总是应该在<tool_use_history></tool_use_history>中找历史记录。
+2. 工具超过1000个字符的输出会被省略。
+</tips>
+
+Current working directory: %s.
+</system>`, workDir)
 
 	q := `<user>
-what can i see after run "python3 /tmp/test.py"?
+当前目录是一个Go后台项目，分析POST /api/projects/:pid([0-9]+)/members/接口，是否存在SQL注入风险？
+如果存在，给出完整的数据流（从接口到sink点）。
 </user>`
 	monica.Init(os.Getenv("MONICA_SESSION_ID"))
 	_ = os.RemoveAll("./log")
 	_ = os.Mkdir("./log", 0755)
 	historyMap := make(map[string]*ToolUseCall)
-	var history []*ToolUseResult
+	var history []*ToolUseCall
 	var i int
 	for {
 		i++
@@ -136,7 +149,9 @@ what can i see after run "python3 /tmp/test.py"?
 		}
 		log.InfoLog("==========================================")
 		log.InfoLog(query)
-		ret, err := monica.ChatCompletion(context.Background(), "deepseek-v3.1", query, func(s string) {
+		model := "deepseek-v3.1"
+		model = monica.ModelClaude4Sonnet
+		ret, err := monica.ChatCompletion(context.Background(), model, query, func(s string) {
 			fmt.Print(s)
 		})
 		fmt.Println()
@@ -155,20 +170,15 @@ what can i see after run "python3 /tmp/test.py"?
 				continue
 			}
 			historyMap[call.Key()] = call
-			var result string
-			if call.Name == "read" {
-				result = read(call.Args)
-			} else if call.Name == "ls" {
-				result = ls(call.Args)
+			err = call.Call(workDir)
+			if err != nil {
+				log.ErrorLog("fail to call: %v", err)
+				continue
 			}
-			ur := &ToolUseResult{
-				ToolUse: fmt.Sprintf("%s %s", call.Name, call.Args),
-				Result:  result,
-			}
-			b, _ := json.MarshalIndent(ur, "", "\t")
+			b, _ := json.MarshalIndent(call, "", "\t")
 			log.InfoLog("==========================================")
 			log.InfoLog(string(b))
-			history = append(history, ur)
+			history = append(history, call)
 		}
 	}
 	log.InfoLog("done")
