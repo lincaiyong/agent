@@ -9,7 +9,7 @@ require (
 	github.com/lincaiyong/agent v1.0.1
 	github.com/lincaiyong/arg v1.0.4
 	github.com/lincaiyong/log v1.0.4
-	github.com/lincaiyong/uniapi v1.0.22
+	github.com/lincaiyong/uniapi v1.0.23
 )
 
 require (

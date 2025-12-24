@@ -133,7 +133,7 @@ func (a *Agent) Run(ctx context.Context, chatFn ChatFn, traceFn TraceFn) error {
 			} else {
 				err = use.Call(a.WorkDir)
 				if err != nil {
-					log.ErrorLog("fail to call: %v", err)
+					log.WarnLog("fail to call: %v", err)
 					continue
 				}
 			}

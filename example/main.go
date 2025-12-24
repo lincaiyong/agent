@@ -23,6 +23,12 @@ func main() {
 	if arg.BoolArg("mini") {
 		model = monica.ModelGPT41Mini
 	}
+	if arg.BoolArg("haiku") {
+		model = monica.ModelClaude45Haiku
+	}
+	if arg.BoolArg("sonnet") {
+		model = monica.ModelClaude4Sonnet
+	}
 	chat := monica.ChatCompletion
 	monica.Init(os.Getenv("MONICA_SESSION_ID"))
 	workDir := "/tmp/sample"
@@ -42,7 +48,7 @@ func main() {
 	err = worker.Run(context.Background(), chat, func(a *agent.Agent) {
 		index++
 		b, _ := json.MarshalIndent(a, "", "\t")
-		err := os.WriteFile(fmt.Sprintf("./log/%d.txt", index), b, 0644)
+		err := os.WriteFile(fmt.Sprintf("./log/%d.log", index), b, 0644)
 		if err != nil {
 			log.ErrorLog("fail to write: %v", err)
 		}

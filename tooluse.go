@@ -64,7 +64,7 @@ func (t *ToolUse) checkFilePath(workDir, filePath string) (string, error) {
 		return "", fmt.Errorf("invalid path('..' is not allowed): %s", filePath)
 	}
 	if strings.HasPrefix(filePath, "/") {
-		if !strings.HasSuffix(filePath, workDir) {
+		if !strings.HasPrefix(filePath, workDir) {
 			return "", fmt.Errorf("invalid path(access outside the working directory is not allowed): %s", filePath)
 		}
 	} else {

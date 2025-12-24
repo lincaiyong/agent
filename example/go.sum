@@ -66,6 +66,8 @@ github.com/lincaiyong/uniapi v1.0.21 h1:nIUjPAzVY05e5pV26kzO7CZr8cArN6f6nENX3b/o
 github.com/lincaiyong/uniapi v1.0.21/go.mod h1:WRA/19e/vLLOMQG6q5tqegf08/YH6/JuSwyLHIj9O1g=
 github.com/lincaiyong/uniapi v1.0.22 h1:VGUYcBI6qqVpGdmpayRcXjZt97E5Kyiohh6BkrtRfP4=
 github.com/lincaiyong/uniapi v1.0.22/go.mod h1:WRA/19e/vLLOMQG6q5tqegf08/YH6/JuSwyLHIj9O1g=
+github.com/lincaiyong/uniapi v1.0.23 h1:3+imiPX54VCwcIuw6i5lq4fbpcqAe/FxiY3RrQasqAQ=
+github.com/lincaiyong/uniapi v1.0.23/go.mod h1:WRA/19e/vLLOMQG6q5tqegf08/YH6/JuSwyLHIj9O1g=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=
 github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stgPZH1UqBm1s8=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
