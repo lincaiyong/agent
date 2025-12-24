@@ -105,6 +105,10 @@ func (t *ToolUse) Call(workDir string) error {
 		common.Quiet = true
 		stdout, stderr, err := common.RunCommand(context.Background(), workDir, t.Name, args...)
 		if err != nil {
+			if t.Name == "rg" && err.Error() == "exit status 1" {
+				t.Result = "(nothing)"
+				return nil
+			}
 			t.Error = fmt.Sprintf("fail to run: %v, %s", err, stderr)
 			return err
 		}
