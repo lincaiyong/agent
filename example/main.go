@@ -25,7 +25,7 @@ func setLogPath(index int) {
 
 func main() {
 	arg.Parse()
-	index, _ := strconv.Atoi(arg.KeyValueArg("index", ""))
+	index, _ := strconv.Atoi(arg.KeyValueArg("load", ""))
 	model := monica.ModelDeepSeekV31
 	if arg.BoolArg("mini") {
 		model = monica.ModelGPT41Mini

@@ -57,16 +57,16 @@ func LoadAgent(filePath string) (*Agent, error) {
 }
 
 type Agent struct {
-	SystemPrompt     string    `json:"system_prompt,omitempty"`
-	ToolUsePrompt    string    `json:"tool_use_prompt,omitempty"`
-	WorkDir          string    `json:"work_dir,omitempty"`
-	TaskDescription  string    `json:"task_description,omitempty"`
-	PreviousActions  []*Action `json:"previous_actions,omitempty"`
-	ToolUseHistory   map[string]*ToolUse
-	CurrentTasks     []*Task `json:"current_tasks,omitempty"`
-	CurrentTasksById map[int]*Task
-	Model            string `json:"model,omitempty"`
-	Reminder         string `json:"reminder,omitempty"`
+	SystemPrompt     string              `json:"system_prompt,omitempty"`
+	ToolUsePrompt    string              `json:"tool_use_prompt,omitempty"`
+	WorkDir          string              `json:"work_dir,omitempty"`
+	TaskDescription  string              `json:"task_description,omitempty"`
+	PreviousActions  []*Action           `json:"previous_actions,omitempty"`
+	ToolUseHistory   map[string]*ToolUse `json:"-"`
+	CurrentTasks     []*Task             `json:"current_tasks,omitempty"`
+	CurrentTasksById map[int]*Task       `json:"-"`
+	Model            string              `json:"model,omitempty"`
+	Reminder         string              `json:"reminder,omitempty"`
 }
 
 type Action struct {
@@ -107,6 +107,7 @@ func (a *Agent) Run(ctx context.Context, chatFn ChatFn, traceFn TraceFn) error {
 		log.InfoLog("==========================================")
 		log.InfoLog(resp)
 		uses := ExtractToolUses(resp)
+		cleanedUses := make([]*ToolUse, 0, len(uses))
 		for _, use := range uses {
 			if a.ToolUseHistory[use.Key()] != nil {
 				use.Error = "(forbidden: already called, do not call again)"
@@ -137,16 +138,18 @@ func (a *Agent) Run(ctx context.Context, chatFn ChatFn, traceFn TraceFn) error {
 					log.WarnLog("fail to call: %v", err)
 					continue
 				}
+				cleanedUses = append(cleanedUses, use)
+				b, _ := json.MarshalIndent(use, "", "\t")
+				log.InfoLog("==========================================")
+				log.InfoLog(string(b))
 			}
-			b, _ := json.MarshalIndent(use, "", "\t")
-			log.InfoLog("==========================================")
-			log.InfoLog(string(b))
 		}
-		action := &Action{Assistant: resp, ToolUses: uses}
+		action := &Action{Assistant: resp, ToolUses: cleanedUses}
 		a.PreviousActions = append(a.PreviousActions, action)
 
 		if traceFn != nil {
 			traceFn(a)
+			a.Reminder = ""
 		}
 
 		if len(uses) == 0 && !strings.Contains(resp, "<tool_use ") {
@@ -161,8 +164,6 @@ func (a *Agent) compose() string {
 	sb.WriteString(a.SystemPrompt)
 	sb.WriteString("\n")
 	sb.WriteString(a.ToolUsePrompt)
-	sb.WriteString(fmt.Sprintf("\n<work directory>\n%s\n</work directory>", a.WorkDir))
-	sb.WriteString(fmt.Sprintf("\n<user>\n%s\n</user>\n", a.TaskDescription))
 	if len(a.PreviousActions) > 0 {
 		b, _ := json.MarshalIndent(a.PreviousActions, "", "\t")
 		sb.WriteString(fmt.Sprintf("\n<previous actions>\n%s\n</previous actions>", string(b)))
@@ -171,9 +172,10 @@ func (a *Agent) compose() string {
 		b, _ := json.MarshalIndent(a.CurrentTasks, "", "\t")
 		sb.WriteString(fmt.Sprintf("\n<current tasks>\n%s\n</current tasks>", string(b)))
 	}
+	sb.WriteString(fmt.Sprintf("\n<work directory>\n%s\n</work directory>", a.WorkDir))
+	sb.WriteString(fmt.Sprintf("\n<user>\n%s\n</user>\n", a.TaskDescription))
 	if a.Reminder != "" {
 		sb.WriteString(fmt.Sprintf("\n<reminder>\n%s\n</reminder>", a.Reminder))
-		a.Reminder = ""
 	}
 	return sb.String()
 }

@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/lincaiyong/daemon v1.0.35
 	github.com/lincaiyong/log v1.0.4
+	github.com/mattn/go-shellwords v1.0.12
 )
 
 require (

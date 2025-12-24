@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lincaiyong/daemon/common"
+	"github.com/mattn/go-shellwords"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -96,7 +97,11 @@ func (t *ToolUse) Call(workDir string) error {
 			return nil
 		}
 	} else if t.Name == "ls" || t.Name == "rg" {
-		args := strings.Fields(t.Args)
+		p := shellwords.NewParser()
+		args, err := p.Parse(t.Args)
+		if err != nil {
+			args = strings.Fields(t.Args)
+		}
 		common.Quiet = true
 		stdout, stderr, err := common.RunCommand(context.Background(), workDir, t.Name, args...)
 		if err != nil {
