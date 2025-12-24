@@ -1,0 +1,35 @@
+<tools>
+You can use the following tools if necessary:
+[
+	{
+		"name": "read",
+		"description": "Read file contents with line numbers prefixed in "|%5d|" format. Use start_line and line_count to control the reading range (default: 1, 100).",
+		"usage": `<tool_use name="read" start_line="\d+" line_count="\d+">file path to read</tool_use>`,
+        "tips": "Attribute 'start_line' and 'line_count' is optional."
+	},
+	{
+	    "name": "write",
+        "description": "Write file. Content must be valid JSON (required). Existing files will be overwritten.",
+        "usage": `<tool_use name="read" file_path="file path to write">text in JSON format</tool_use>`,
+        "tips": ""
+	},
+	{
+		"name": "ls",
+		"description": "List directory contents.",
+		"usage": `<tool_use name="ls">the parameters</tool_use>`,
+		"tips": "Parameters work the same as the shell command ls. Output exceeding 100 lines will be truncated. Lines exceeding 1000 characters will be truncated."
+	},
+	{
+		"name": "rg",
+		"description": "Recursively searches the current directory for lines matching a regex pattern.",
+		"usage": `<tool_use name="rg">the parameters</tool_use>`,
+		"tips": "Parameters work the same as Ripgrep. Output exceeding 100 lines will be truncated. Lines exceeding 1000 characters will be truncated."
+	},
+	{
+	    "name": "task",
+	    "description": "Manage your task list.",
+	    "usage": `<tool_use name="task" id="\d+" status="todo/doing/done">task description in 20 words</tool_use>`,
+	    "tips": "Required: id (unique), status. Optional: content (if not modifying)"
+	}
+]
+</tools>

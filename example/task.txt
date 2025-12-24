@@ -100,18 +100,20 @@
 1. 第一行表示修改的文件，格式为：'filepath: {实际修改的文件路径，使用相对路径}'
 2. 第二行表示修改的函数的签名，格式为：'function: {实际修改的函数的签名，如果没有则留空}'
 3. 第三行开始表示补丁正文，有三种补丁操作：保留、删除、插入
-    - 保留：' |{原始行号，%6d格式}|{原始行的文本}'
-    - 删除：'-|{原始行号，%6d格式}|{原始行的文本}'
-    - 插入：'+|      |{插入行的文本}'
-4. 注意：必须在前后包含一个「保留」行，作为上下文
+    - 保留：' |{原始行号，%5d格式}|{原始行的文本}'
+    - 删除：'-|{原始行号，%5d格式}|{原始行的文本}'
+    - 插入：'+|     |{插入行的文本}'
+4. 上下文：删除和插入的操作前后，必须包含至少一个，不超过三个「保留」行
 
 <example>
 ```
+---+++
 filepath: rel/path/to/file
 function: func SomeFunc(....)
- |      87|id, _ := strconv.ParseInt(c.Query("id"), 10, 64)
--|      88|req.Id = id
-+|        |req.Id = ctx.UserId()
- |      89|logs.CtxInfo(ctx, "....", funcName)
+ |   87|id, _ := strconv.ParseInt(c.Query("id"), 10, 64)
+-|   88|req.Id = id
++|     |req.Id = ctx.UserId()
+ |   89|logs.CtxInfo(ctx, "....", funcName)
+---+++
 ```
 </example>
