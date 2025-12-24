@@ -66,6 +66,7 @@ type Agent struct {
 	CurrentTasks     []*Task `json:"current_tasks,omitempty"`
 	CurrentTasksById map[int]*Task
 	Model            string `json:"model,omitempty"`
+	Reminder         string `json:"reminder,omitempty"`
 }
 
 type Action struct {
@@ -148,14 +149,7 @@ func (a *Agent) Run(ctx context.Context, chatFn ChatFn, traceFn TraceFn) error {
 			traceFn(a)
 		}
 
-		done := true
-		for _, task := range a.CurrentTasks {
-			if task.Status != "done" {
-				done = false
-				break
-			}
-		}
-		if done && (len(a.CurrentTasks) > 0 || len(uses) == 0) {
+		if len(uses) == 0 && !strings.Contains(resp, "<tool_use ") {
 			break
 		}
 	}
@@ -176,6 +170,10 @@ func (a *Agent) compose() string {
 	if len(a.CurrentTasks) > 0 {
 		b, _ := json.MarshalIndent(a.CurrentTasks, "", "\t")
 		sb.WriteString(fmt.Sprintf("\n<current tasks>\n%s\n</current tasks>", string(b)))
+	}
+	if a.Reminder != "" {
+		sb.WriteString(fmt.Sprintf("\n<reminder>\n%s\n</reminder>", a.Reminder))
+		a.Reminder = ""
 	}
 	return sb.String()
 }

@@ -97,6 +97,7 @@ func (t *ToolUse) Call(workDir string) error {
 		}
 	} else if t.Name == "ls" || t.Name == "rg" {
 		args := strings.Fields(t.Args)
+		common.Quiet = true
 		stdout, stderr, err := common.RunCommand(context.Background(), workDir, t.Name, args...)
 		if err != nil {
 			t.Error = fmt.Sprintf("fail to run: %v, %s", err, stderr)

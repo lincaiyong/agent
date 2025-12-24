@@ -3,7 +3,7 @@ module github.com/lincaiyong/agent
 go 1.25.0
 
 require (
-	github.com/lincaiyong/daemon v1.0.34
+	github.com/lincaiyong/daemon v1.0.35
 	github.com/lincaiyong/log v1.0.4
 )
 
