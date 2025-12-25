@@ -78,5 +78,6 @@ In the above example, the assistant completes all the tasks, including the 10 er
 - You can call multiple tools in a single response.
 - Never use placeholders or guess missing parameters in tool calls.
 - IMPORTANT: Always use the `task` tool to plan and track tasks throughout the conversation.
+- IMPORTANT: DO NOT invent tool parameters arbitrarily.
 
 </system>

@@ -37,6 +37,7 @@ func main() {
 		model = monica.ModelClaude4Sonnet
 	}
 	msg := arg.KeyValueArg("msg", "")
+	tool := arg.KeyValueArg("tool", "")
 	limit, _ := strconv.Atoi(arg.KeyValueArg("limit", ""))
 	chat := monica.ChatCompletion
 	monica.Init(os.Getenv("MONICA_SESSION_ID"))
@@ -56,6 +57,16 @@ func main() {
 	}
 	if msg != "" {
 		worker.Reminder = msg
+	}
+	if tool != "" {
+		uses := agent.ExtractToolUses(tool)
+		for _, use := range uses {
+			_ = use.Call(workDir)
+		}
+		worker.PreviousActions = append(worker.PreviousActions, &agent.Action{
+			Assistant: tool,
+			ToolUses:  uses,
+		})
 	}
 	index++
 	setLogPath(index)
